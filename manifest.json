@@ -1,0 +1,58 @@
+{
+  "name": "MG POS — Supermarket Point of Sale",
+  "short_name": "MG POS",
+  "description": "Point of Sale and inventory management system for supermarkets. Sell products, track stock, and view reports.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "background_color": "#1a1a18",
+  "theme_color": "#1D9E75",
+  "orientation": "landscape-primary",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Sale",
+      "short_name": "Sell",
+      "description": "Start a new sale at the till",
+      "url": "/?tab=sell",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Manage Stock",
+      "short_name": "Stock",
+      "description": "View and adjust product stock levels",
+      "url": "/?tab=stock",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "MG POS — Supermarket Point of Sale"
+    }
+  ]
+}

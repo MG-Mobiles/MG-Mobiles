@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MG POS — Supermarket Point of Sale</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#1D9E75" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="MG POS" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Tabler Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.x/dist/tabler-icons.min.css" />
+</head>
+<body>
+
+  <div class="pos-wrap" id="app">
+
+    <!-- ── Top navigation bar ── -->
+    <header class="header">
+      <h1 class="logo">
+        <i class="ti ti-cash-register" aria-hidden="true"></i>
+        MG POS
+      </h1>
+      <nav class="nav-tabs" role="tablist">
+        <button class="tab active" role="tab" aria-selected="true"  onclick="switchTab('sell')"   ><i class="ti ti-cash-register" aria-hidden="true"></i> Sell</button>
+        <button class="tab"        role="tab" aria-selected="false" onclick="switchTab('stock')"  ><i class="ti ti-package"       aria-hidden="true"></i> Stock</button>
+        <button class="tab"        role="tab" aria-selected="false" onclick="switchTab('history')"><i class="ti ti-history"        aria-hidden="true"></i> History</button>
+        <button class="tab"        role="tab" aria-selected="false" onclick="switchTab('reports')"><i class="ti ti-chart-bar"      aria-hidden="true"></i> Reports</button>
+      </nav>
+      <div class="header-right">
+        <span class="clock" id="clock" aria-live="polite"></span>
+        <button class="install-btn" id="install-btn" onclick="installApp()" style="display:none" title="Install MG POS on this PC" aria-label="Install app on this PC">
+          <i class="ti ti-download" aria-hidden="true"></i>
+          <span>Install App</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ── Main content area ── -->
+    <main class="main" id="main-area">
+
+      <!-- SELL TAB -->
+      <section id="sec-sell" class="tab-section active">
+        <div class="card">
+          <div class="search-bar">
+            <i class="ti ti-search" aria-hidden="true"></i>
+            <input
+              type="search"
+              id="product-search"
+              placeholder="Search products or scan barcode…"
+              aria-label="Search products"
+              oninput="renderProducts()"
+            />
+          </div>
+          <div class="filter-bar" id="cat-filters" role="group" aria-label="Category filters"></div>
+          <div class="product-grid" id="product-grid" role="list"></div>
+        </div>
+      </section>
+
+      <!-- STOCK TAB -->
+      <section id="sec-stock" class="tab-section">
+        <div class="card">
+          <div class="action-row">
+            <button class="btn-sm btn-primary" onclick="openAddProduct()">
+              <i class="ti ti-plus" aria-hidden="true"></i> Add product
+            </button>
+            <button class="btn-sm" onclick="exportStock()">
+              <i class="ti ti-download" aria-hidden="true"></i> Export CSV
+            </button>
+            <div class="search-bar flex-1">
+              <i class="ti ti-search" aria-hidden="true"></i>
+              <input
+                type="search"
+                id="stock-search"
+                placeholder="Search stock…"
+                aria-label="Search stock"
+                oninput="renderStock()"
+              />
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table aria-label="Product stock table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="stock-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- HISTORY TAB -->
+      <section id="sec-history" class="tab-section">
+        <div class="card">
+          <h2 class="card-title">Transaction history</h2>
+          <div id="tx-list"></div>
+        </div>
+      </section>
+
+      <!-- REPORTS TAB -->
+      <section id="sec-reports" class="tab-section">
+        <div class="stats-grid" id="report-stats"></div>
+        <div class="card">
+          <h2 class="card-title">Top selling products</h2>
+          <table aria-label="Top selling products">
+            <thead><tr><th>Product</th><th>Units sold</th><th>Revenue</th></tr></thead>
+            <tbody id="top-products"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h2 class="card-title">Low stock alerts</h2>
+          <table aria-label="Low stock alerts">
+            <thead><tr><th>Product</th><th>Current stock</th><th>Min. recommended</th></tr></thead>
+            <tbody id="low-stock"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ── Order sidebar (Sell tab only) ── -->
+    <aside class="sidebar" id="order-sidebar" aria-label="Current order">
+      <div class="sidebar-header">
+        <span><i class="ti ti-receipt" aria-hidden="true"></i> Current order</span>
+        <span id="cart-count" aria-live="polite">0 items</span>
+      </div>
+      <div class="cart-items" id="cart-items" role="list">
+        <div class="cart-empty">
+          <i class="ti ti-shopping-cart" aria-hidden="true"></i>
+          Cart is empty
+        </div>
+      </div>
+      <div class="cart-footer">
+        <div class="subtotal-row"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
+        <div class="subtotal-row"><span>Tax (10%)</span><span id="tax">$0.00</span></div>
+        <div class="total-row"><span>Total</span><span id="total">$0.00</span></div>
+        <button class="pay-btn" id="pay-btn" onclick="openPayment()" disabled aria-label="Process payment">
+          <i class="ti ti-credit-card" aria-hidden="true"></i> Process payment
+        </button>
+        <button class="clear-btn" onclick="clearCart()">Clear cart</button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ── Modal mount point ── -->
+  <div id="modal-container" role="dialog" aria-modal="true"></div>
+
+  <!-- ── Toast notification ── -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- ── Scripts (order matters) ── -->
+  <script src="data.js"></script>
+  <script src="storage.js"></script>
+  <script src="cart.js"></script>
+  <script src="products.js"></script>
+  <script src="modals.js"></script>
+  <script src="reports.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
