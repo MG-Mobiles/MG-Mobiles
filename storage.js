@@ -1,21 +1,19 @@
 /**
  * storage.js — Persistence layer (localStorage)
- *
- * All reads/writes go through this module so the rest of the app
- * never touches localStorage directly. Swap this file out to use
- * IndexedDB, a REST API, or another backend.
  */
 
 const KEYS = {
   PRODUCTS:     'superpos_products',
   TRANSACTIONS: 'superpos_transactions',
   NEXT_ID:      'superpos_next_id',
+  DEBTORS:      'superpos_debtors',
 };
 
 /** In-memory state (single source of truth during a session). */
 let products     = [];
 let transactions = [];
 let nextId       = DEFAULT_NEXT_ID;
+let debtors      = [];   // [{ name, amount, txId, date }]
 
 /* ── Read helpers ── */
 
@@ -23,6 +21,7 @@ function getProducts()     { return products; }
 function getTransactions() { return transactions; }
 function getNextId()       { return nextId; }
 function bumpNextId()      { nextId++; persistNextId(); }
+function getDebtors()      { return debtors; }
 
 /* ── Write helpers ── */
 
@@ -39,6 +38,11 @@ function persistTransactions() {
 function persistNextId() {
   try { localStorage.setItem(KEYS.NEXT_ID, String(nextId)); }
   catch (e) { console.warn('Could not save nextId:', e); }
+}
+
+function persistDebtors() {
+  try { localStorage.setItem(KEYS.DEBTORS, JSON.stringify(debtors)); }
+  catch (e) { console.warn('Could not save debtors:', e); }
 }
 
 /* ── Mutation API ── */
@@ -71,20 +75,24 @@ function addTransaction(tx) {
   persistTransactions();
 }
 
+function addDebtor(debtor) {
+  debtors.push(debtor);
+  persistDebtors();
+}
+
+function settleDebtor(index) {
+  debtors.splice(index, 1);
+  persistDebtors();
+}
+
 /* ── Bootstrap ── */
 
-/**
- * loadData()
- * Called once at startup. Tries to read from localStorage;
- * falls back to DEFAULT_PRODUCTS if nothing is stored yet.
- */
 function loadData() {
   // --- products ---
   const rawProducts = localStorage.getItem(KEYS.PRODUCTS);
   if (rawProducts) {
-    try {
-      products = JSON.parse(rawProducts);
-    } catch {
+    try { products = JSON.parse(rawProducts); }
+    catch {
       products = [...DEFAULT_PRODUCTS];
       persistProducts();
     }
@@ -110,13 +118,15 @@ function loadData() {
       : DEFAULT_NEXT_ID;
     persistNextId();
   }
+
+  // --- debtors ---
+  const rawDebtors = localStorage.getItem(KEYS.DEBTORS);
+  if (rawDebtors) {
+    try { debtors = JSON.parse(rawDebtors); }
+    catch { debtors = []; }
+  }
 }
 
-/**
- * resetData()
- * Clears localStorage and reloads defaults.
- * Useful for development / demos.
- */
 function resetData() {
   Object.values(KEYS).forEach(k => localStorage.removeItem(k));
   loadData();
