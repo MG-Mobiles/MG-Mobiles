@@ -6,12 +6,9 @@ let activeCategory = 'All';
 
 /* ── Helpers ── */
 
-/**
- * stockStatus(product) → 'ok' | 'low' | 'out'
- */
 function stockStatus(product) {
-  if (product.stock === 0)                    return 'out';
-  if (product.stock <= product.minStock)      return 'low';
+  if (product.stock === 0)               return 'out';
+  if (product.stock <= product.minStock) return 'low';
   return 'ok';
 }
 
@@ -93,25 +90,27 @@ function renderStock() {
   const tagLabel = { ok: 'In stock', low: 'Low stock', out: 'Out of stock' };
 
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--color-text-tertiary)">No products match your search.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--color-text-tertiary)">No products match your search.</td></tr>';
     return;
   }
 
   tbody.innerHTML = list.map(product => {
     const s = stockStatus(product);
+    const cost = product.costPrice != null ? '$' + product.costPrice.toFixed(2) : '—';
     return `
       <tr>
         <td>${product.name}</td>
         <td style="color:var(--color-text-secondary)">${product.category}</td>
         <td>$${product.price.toFixed(2)}</td>
+        <td style="color:var(--color-text-secondary)">${cost}</td>
         <td>
           <strong>${product.stock}</strong>
           <span style="font-size:11px;color:var(--color-text-tertiary)"> / min ${product.minStock}</span>
         </td>
         <td><span class="tag ${tagClass[s]}">${tagLabel[s]}</span></td>
         <td style="white-space:nowrap;display:flex;gap:4px;align-items:center">
-          <button class="btn-sm" style="padding:3px 8px;font-size:11px" onclick="openStockAdjust(${product.id})">
-            <i class="ti ti-adjustments" aria-hidden="true"></i> Adjust
+          <button class="btn-sm" style="padding:3px 8px;font-size:11px" onclick="openRestock(${product.id})">
+            <i class="ti ti-plus" aria-hidden="true"></i> Restock
           </button>
           <button class="btn-sm" style="padding:3px 8px;font-size:11px" onclick="openEditProduct(${product.id})" aria-label="Edit ${product.name}">
             <i class="ti ti-edit" aria-hidden="true"></i>
@@ -140,9 +139,9 @@ function deleteProduct(id) {
 /* ── CSV export ── */
 
 function exportStock() {
-  const rows = ['Product,Category,Price,Stock,Min Stock,Status'];
+  const rows = ['Product,Category,Selling Price,Cost Price,Stock,Min Stock,Status'];
   getProducts().forEach(p => {
-    rows.push(`"${p.name}","${p.category}",${p.price.toFixed(2)},${p.stock},${p.minStock},${stockStatus(p)}`);
+    rows.push(`"${p.name}","${p.category}",${p.price.toFixed(2)},${(p.costPrice||0).toFixed(2)},${p.stock},${p.minStock},${stockStatus(p)}`);
   });
   const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);
