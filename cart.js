@@ -1,11 +1,7 @@
 /**
  * cart.js — Shopping cart state & DOM rendering
  *
- * The cart is an array of line items:
- *   { id, name, price, qty }
- *
- * All mutations go through the functions below so the UI stays
- * in sync via renderCart().
+ * Cart line item: { id, name, price, costPrice, qty }
  */
 
 let cart = [];
@@ -17,7 +13,7 @@ function cartSubtotal() {
 }
 
 function cartTax() {
-  return cartSubtotal() * TAX_RATE;
+  return cartSubtotal() * TAX_RATE;  // TAX_RATE = 0
 }
 
 function cartTotal() {
@@ -26,6 +22,10 @@ function cartTotal() {
 
 function cartItemCount() {
   return cart.reduce((sum, item) => sum + item.qty, 0);
+}
+
+function cartTotalCost() {
+  return cart.reduce((sum, item) => sum + item.costPrice * item.qty, 0);
 }
 
 /* ── Mutations ── */
@@ -42,7 +42,13 @@ function addToCart(productId) {
     }
     existing.qty++;
   } else {
-    cart.push({ id: productId, name: product.name, price: product.price, qty: 1 });
+    cart.push({
+      id:        productId,
+      name:      product.name,
+      price:     product.price,
+      costPrice: product.costPrice || 0,
+      qty:       1,
+    });
   }
   renderCart();
 }
@@ -72,19 +78,28 @@ function clearCart() {
 
 /**
  * finaliseCart()
- * Deducts sold quantities from stock, records a transaction,
- * and empties the cart.
+ * Deducts sold quantities from stock, records a transaction, empties the cart.
  * @param {string} paymentMethod
+ * @param {number} amountPaid   — amount the customer actually paid
+ * @param {string} customerName — for debit/partial payments
  */
-function finaliseCart(paymentMethod) {
+function finaliseCart(paymentMethod, amountPaid, customerName) {
+  const total    = cartTotal();
+  const paid     = amountPaid !== undefined ? amountPaid : total;
+  const balance  = Math.max(0, total - paid);
+
   const tx = {
-    id:       'TX' + Date.now(),
-    date:     new Date().toISOString(),
-    items:    cart.map(item => ({ ...item })),
-    subtotal: cartSubtotal(),
-    tax:      cartTax(),
-    total:    cartTotal(),
-    method:   paymentMethod,
+    id:           'TX' + Date.now(),
+    date:         new Date().toISOString(),
+    items:        cart.map(item => ({ ...item })),
+    subtotal:     cartSubtotal(),
+    tax:          cartTax(),
+    total:        total,
+    paid:         paid,
+    balance:      balance,
+    method:       paymentMethod,
+    customerName: customerName || '',
+    totalCost:    cartTotalCost(),
   };
 
   // Deduct from stock
@@ -98,6 +113,12 @@ function finaliseCart(paymentMethod) {
   persistProducts();
 
   addTransaction(tx);
+
+  // Record outstanding debt if customer didn't pay in full
+  if (balance > 0 && customerName) {
+    addDebtor({ name: customerName, amount: balance, txId: tx.id, date: tx.date });
+  }
+
   clearCart();
   renderProducts();
   renderStock();
